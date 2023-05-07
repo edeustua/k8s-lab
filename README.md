@@ -212,7 +212,8 @@ kubectl get nodes
 The nodes will show not ready until you install a network plugin.
 
 ```
-kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/v0.11.0/Documentation/kube-flannel.yml
+kubectl apply -f https://github.com/flannel-io/flannel/releases/latest/download/kube-flannel.yml
+
 ```
 
 ## Smoke testing cluster
