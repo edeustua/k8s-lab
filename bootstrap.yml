@@ -3,30 +3,23 @@
 
   vars:
     ansible_user: vagrant
-    ansible_ssh_pass: vagrant
+    ansible_ssh_private_key_file: /home/edeustua/.vagrant.d/insecure_private_key
     ansible_connection: paramiko
 
   tasks:
-
-    - name: Disable auto upgrades
-      copy:
-        src: /usr/share/unattended-upgrades/20auto-upgrades-disabled
-        dest: /etc/apt/apt.conf.d/20auto-upgrades
-        remote_src: yes
+    - name: Update all packages
+      apt:
+        name: "*"
+        state: latest
 
     - name: Disable SWAP since kubernetes can't work with swap enabled (1/2)
-      shell: |
-        swapoff -a      
+      command: swapoff -a      
 
-    - name: Disable SWAP in fstab since kubernetes can't work with swap enabled 
+    - name: Disable SWAP since kubernetes can't work with swap enabled (2/2)
       replace:
         path: /etc/fstab
         regexp: '^([^#].*?\sswap\s+sw\s+.*)$'
         replace: '# \1'
-        
-        #   - name: Reboot
-        #      reboot:
-
 
     - name: Create kube superuser
       user:
@@ -35,8 +28,40 @@
         shell: /bin/bash
         groups: sudo
 
-
     - name: Allow kube to use sudo without a password
       copy:
         content: "kube ALL=(ALL) NOPASSWD:ALL"
         dest: /etc/sudoers.d/kube
+
+    - name: Install kernel modules
+      shell:
+        cmd: |
+          tee /etc/modules-load.d/containerd.conf <<EOF
+          overlay
+          br_netfilter
+          EOF
+          modprobe overlay
+          modprobe br_netfilter
+        creates: /etc/modules-load.d/containerd.conf
+
+
+    - name: Set bridge configuration
+      shell:
+        cmd: |
+          tee /etc/sysctl.d/kubernetes.conf <<EOF
+          net.bridge.bridge-nf-call-ip6tables = 1
+          net.bridge.bridge-nf-call-iptables = 1
+          net.ipv4.ip_forward = 1
+          EOF
+          sysctl --system
+        creates: /etc/sysctl.d/kubernetes.conf
+
+    - name: Install utilities
+      apt:
+        name:
+          - curl
+          - gnupg2
+          - apt-transport-https
+          - ca-certificates
+        state: latest
+        update_cache: true

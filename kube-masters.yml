@@ -1,4 +1,4 @@
-- hosts: kube-masters
+- hosts: kube_masters
   become: yes
   roles:
     - hosts

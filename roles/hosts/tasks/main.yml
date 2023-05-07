@@ -1,10 +1,9 @@
-- name: update hosts file
+- name: Update hosts file
   lineinfile:
     dest: /etc/hosts
     line: "{{ hostvars[item].ansible_host }} {{ item }}"
     regexp: '.*{{ item }}$'
   with_items: "{{ groups.all }}"
 
-- name: update host name
-  hostname:
-    name: "{{ inventory_hostname }}"
+- name: Update host name
+  shell: sudo hostnamectl set-hostname {{ inventory_hostname }}

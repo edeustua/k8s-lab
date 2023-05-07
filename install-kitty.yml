@@ -1,0 +1,16 @@
+- hosts: all
+
+  vars:
+    ansible_user: vagrant
+    ansible_ssh_private_key_file: /home/edeustua/.vagrant.d/insecure_private_key
+    ansible_connection: paramiko
+
+  tasks:
+    - name: Copy xterm-kitty
+      copy:
+        src: ./xterm-kitty
+        dest: /tmp/xterm-kitty
+
+    - name: Install xterm-kitty
+      command: tic -x -o ~/.terminfo /tmp/xterm-kitty
+

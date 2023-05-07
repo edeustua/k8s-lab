@@ -1,42 +1,68 @@
-- name: install Docker
-  apt:
-    name: docker.io
-    state: present
-    update_cache: true
+- name: Install containerd 1.7.0
+  unarchive:
+    src: ./containerd-static-1.7.0-linux-amd64.tar.gz
+    dest: /usr/local
 
-- name: install APT Transport HTTPS
-  apt:
-    name: apt-transport-https
-    state: present
+- name: Ensure systemd folder exists
+  file:
+    path: /usr/local/lib/systemd/system
+    state: directory
 
-- name: add Kubernetes apt-key
-  apt_key:
-    url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
-    state: present
+- name: Install containerd 1.7.0 systemd
+  copy:
+    src: ./containerd.service
+    dest: /usr/local/lib/systemd/system/containerd.service
 
-- name: add Kubernetes' APT repository
+- name: Install systemd containerd service
+  shell:
+    cmd: |
+      systemctl daemon-reload
+      systemctl enable --now containerd
+
+- name: Install runc 1.1.7
+  copy:
+    src: ./runc.amd64
+    dest: /usr/local/bin/runc
+    mode: '0755'
+
+- name: Ensure CNI directory exists
+  file:
+    path: /opt/cni/bin
+    state: directory
+
+- name: Install CNI plugins
+  unarchive:
+    src: ./cni-plugins-linux-amd64-v1.2.0.tgz
+    dest: /opt/cni/bin
+
+- name: Ensure containerd config folder
+  file:
+    path: /etc/containerd
+    state: directory
+
+- name: Configure containerd.io
+  shell:
+    cmd: |
+      containerd config default | sudo tee /etc/containerd/config.toml >/dev/null 2>&1
+      sudo sed -i 's/SystemdCgroup \= false/SystemdCgroup \= true/g' /etc
+      sudo systemctl restart containerd
+
+- name: Add kubernetes repository (1/2)
+  shell:
+    cmd: >
+      curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg 
+      | sudo gpg --batch --yes --dearmour -o /etc/apt/trusted.gpg.d/kubernetes-xenial.gpg
+    creates: /etc/apt/trusted.gpg.d/kubernetes-xenial.gpg
+
+- name: Add kubernetes repository (2/2)
   apt_repository:
-   repo: deb http://apt.kubernetes.io/ kubernetes-xenial main
-   state: present
-   filename: 'kubernetes'
+    repo: deb http://apt.kubernetes.io/ kubernetes-xenial main
+    state: present
 
-- name: install kubelet
+- name: Install kubelet
   apt:
-    name: kubelet=1.15.2-00
+    name: 
+      - kubelet
+      - kubeadm
     state: present
     update_cache: true
-
-- name: install kubeadm
-  apt:
-    name: kubeadm=1.15.2-00
-    state: present
-
-- name: enable service docker
-  service:
-    name: docker
-    enabled: yes
-
-- name: install nfs-common
-  apt:
-    name: nfs-common
-    state: present
