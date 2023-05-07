@@ -4,6 +4,8 @@ This guide will show you how to setup a Kubernetes cluster using KVM virtual
 machines configured via Vagrant and Ansible. This way you can be ready in a few
 minutes without much hassle.
 
+Original guide by [talbotfoundry](https://github.com/talbotfoundry/k8s-kvm).
+
 # Project purpose
 
 Create a "real" Kubernetes cluster on commodity hardware you might already have
